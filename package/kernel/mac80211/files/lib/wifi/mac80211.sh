@@ -95,6 +95,11 @@ detect_mac80211() {
 			dev_id="	option macaddr	$(cat /sys/class/ieee80211/${dev}/macaddress)"
 		fi
 
+                # 将ap ssid改为weidu-XXXX
+                # 其中XXXX为MAC地址的最低两字节
+                # FIXME:无法获取?
+                # eth02macaddr=$(cat /sys/class/net/eth0.2/address | awk -F: '{ print $5 $6 }')
+
 		cat <<EOF
 config wifi-device  radio$devidx
 	option type     mac80211
@@ -103,13 +108,13 @@ config wifi-device  radio$devidx
 $dev_id
 $ht_capab
 	# REMOVE THIS LINE TO ENABLE WIFI:
-	option disabled 1
+	# option disabled 1
 
 config wifi-iface
 	option device   radio$devidx
 	option network  lan
 	option mode     ap
-	option ssid     OpenWrt
+	option ssid     radio-master
 	option encryption none
 
 EOF
