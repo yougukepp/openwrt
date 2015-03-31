@@ -1,6 +1,5 @@
 #!/bin/bash
 
-git pull origin master:official
-
-
+#git pull
+#git push
 
