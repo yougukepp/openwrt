@@ -1,6 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# 需要设置一台ap主 一台sta从
+# 电脑WIFI 192.168.10.124  sta
+# 主WIFI   192.168.10.1    ap
+# 从WIFI   192.168.10.125  sta
+# 从LAN    192.168.11.1
+# 电脑LAN  192.168.11.124
+
 import time
 import socket
 
