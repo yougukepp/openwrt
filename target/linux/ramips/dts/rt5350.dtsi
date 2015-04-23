@@ -77,6 +77,24 @@
 			interrupts = <3>;
 		};
 
+		uart@500 {
+			compatible = "ralink,rt5350-uart", "ralink,rt2880-uart", "ns16550a";
+			reg = <0x500 0x100>;
+
+			resets = <&rstctrl 12>;
+			reset-names = "uart";
+
+			interrupt-parent = <&intc>;
+			interrupts = <5>;
+
+			reg-shift = <2>;
+
+			pinctrl-names = "default";
+			pinctrl-0 = <&uartf_pins>;
+
+			status = "disabled";
+		};
+
 		gpio0: gpio@600 {
 			compatible = "ralink,rt5350-gpio", "ralink,rt2880-gpio";
 			reg = <0x600 0x34>;
@@ -95,8 +113,6 @@
 			ralink,register-map = [ 00 04 08 0c
 						20 24 28 2c
 						30 34 ];
-
-			status = "disabled";
 		};
 
 		gpio1: gpio@660 {
@@ -164,22 +180,6 @@
 			pinctrl-0 = <&uartlite_pins>;
 
 			reg-shift = <2>;
-		};
-
-		uart@500 {
-			compatible = "ralink,rt5350-uart", "ralink,rt2880-uart", "ns16550a";
-			reg = <0x500 0x100>;
-
-			resets = <&rstctrl 12>;
-			reset-names = "uart";
-
-			interrupt-parent = <&intc>;
-			interrupts = <5>;
-
-			reg-shift = <2>;
-
-			pinctrl-names = "default";
-			pinctrl-0 = <&uartf_pins>;
 		};
 
 		systick@d00 {
