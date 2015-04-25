@@ -51,17 +51,17 @@ g_buf_size = 1024
 g_serial_buf_size = 1
 
 def Config5350():
-    cmd = 'cp radio_tools/sta/* /etc/config/ && sync'
+    cmd = 'cp radio_tools/sta/* /etc/config/ && sync && echo ok'
     os.system(cmd)
     time.sleep(g_cp_time)
     print 'cp done'
 
-    cmd = '/etc/init.d/network restart'
+    cmd = '/etc/init.d/network restart && echo ok'
     os.system(cmd)
     time.sleep(g_sta_config_time)
     print 'sta done'
 
-    cmd = '/etc/init.d/firewall stop'
+    cmd = '/etc/init.d/firewall stop && echo ok'
     os.system(cmd)
     time.sleep(g_firewall_stop_time)
     print 'firewall stop done'
@@ -132,12 +132,6 @@ if __name__ == '__main__':
     lan_in_addr = (g_lan_in_ip, g_lan_in_port)
     wifi_out_addr = (g_wifi_out_ip, g_wifi_out_port)
 
-    lanInSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    lanInSocket.bind(lan_in_addr)
-
-    wifiInSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    wifiInSocket.bind(wifi_in_addr)
-
     # open serial
     ser = serial.Serial(g_serial_name)
     ser.timeout = None
@@ -148,6 +142,11 @@ if __name__ == '__main__':
 
     print 'begin config system'
     Config5350()
+
+    lanInSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    lanInSocket.bind(lan_in_addr)
+    wifiInSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    wifiInSocket.bind(wifi_in_addr)
 
     print 'begin listen port:'
     print 'listen by',

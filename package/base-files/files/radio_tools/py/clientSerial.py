@@ -3,7 +3,7 @@
 
 import serial
 
-gSerialName = 'COM2'
+gSerialName = '/dev/ttyUSB1'
 gBaudrate = 9600
 gRequestByte = 1
 gSendData = b'0123456789abcdef\r\n'
