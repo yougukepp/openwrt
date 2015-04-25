@@ -2,16 +2,16 @@
 # the system init finished. By default this file does nothing.
 #
 
-cp radio_tools/sta/* /etc/config/ && sync
-echo 'cp sta files done'
+#cp radio_tools/sta/* /etc/config/ && sync
+#echo 'cp sta files done'
 
-/etc/init.d/firewall stop && echo ok
-echo 'firewall stop done'
+#/etc/init.d/firewall stop && echo ok
+#echo 'firewall stop done'
 
-/etc/init.d/network restart && echo ok
-echo 'sta done'
+#/etc/init.d/network restart && echo ok
+#echo 'sta done'
 
-/radio_tools/py/radioDaemon.py &
+#/radio_tools/py/radioDaemon.py &
 
 exit 0
 
