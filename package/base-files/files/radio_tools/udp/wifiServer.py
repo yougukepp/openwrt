@@ -12,12 +12,13 @@ addr = (host, port)
 udpSerSock = socket(AF_INET, SOCK_DGRAM)
 udpSerSock.bind(addr)
 
-print('wating for message...', end = '') 
+print('wating for message...', end = '')
 print(addr)
 
-(recvData, clientAddr) = udpSerSock.recvfrom(bufSize)
-print(recvData)
-print(clientAddr)
+while True:
+    (recvData, clientAddr) = udpSerSock.recvfrom(bufSize)
+    print(recvData)
+    print(clientAddr)
 
 udpSerSock.close()
 

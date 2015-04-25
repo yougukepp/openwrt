@@ -3,26 +3,32 @@
 
 import serial
 
-gSerialName = '/dev/ttyUSB1'
-sendData = b'0123456789abcdef'
-
-def test(timeOut, recvBufSize, baudrate):
-    ser = serial.Serial(gSerialName)
-    ser.timeout = timeOut
-    ser.baudrate = baudrate 
-    
-    print('wating for message...', end = '') 
-    print(ser.portstr + ',', end = '')
-    print(ser.baudrate)
-
-    r = ser.read(recvBufSize)
-    print(r)
-
-    #ser.close()
+gSerialName = 'COM2'
+gBaudrate = 9600
+gRequestByte = 1
 
 if __name__ == "__main__":
-    recvBufSize = 1024
-    timeOut = None
-    baudrate = 9600
-    test(timeOut, recvBufSize, baudrate)
+    ser = serial.Serial(
+            port = gSerialName,
+            baudrate = gBaudrate,
+            bytesize = serial.EIGHTBITS,
+            parity = serial.PARITY_NONE,
+            stopbits = serial.STOPBITS_ONE,
+            timeout = None,
+            xonxoff = False,
+            rtscts = False,
+            writeTimeout = None,
+            dsrdtr = False,
+            interCharTimeout = None)
+
+    print('wating for message...  ', end = '')
+    print(ser.portstr + ',', end = '')
+    print(str(ser.timeout) + ',', end = '')
+    print(ser.baudrate)
+
+    while True:
+        r = ser.read()
+        print(r)
+
+    ser.close()
 

@@ -16,16 +16,20 @@
 # 主设备就是路由器 无需代码
 # 从设备需要代码
 
+import os
 import time
 import socket
-import thread 
+import thread
 import serial
 
-g_sleep_time = 0
-g_promtp_time = 10
+g_sleep_time = 30
+g_cp_time = 2
+g_sta_config_time = 10
+g_firewall_stop_time = 3
+g_promtp_time = 3
 
 # wifi interface
-g_wifi_in_ip = '192.168.2.102'
+g_wifi_in_ip = '192.168.2.103'
 g_wifi_in_port = 8001
 g_wifi_out_ip = '192.168.2.100'
 #g_wifi_out_port = 8002
@@ -44,11 +48,29 @@ g_baudrate = 9600
 
 # recv bufsize
 g_buf_size = 1024
+g_serial_buf_size = 1
 
-def Wifi2LanAndSerial(inSocket, outAddr, outSerial):  
-    outSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) 
-    while True: 
-        (recvData, clientAddr) = inSocket.recvfrom(g_buf_size) 
+def Config5350():
+    cmd = 'cp radio_tools/sta/* /etc/config/ && sync'
+    os.system(cmd)
+    time.sleep(g_cp_time)
+    print 'cp done'
+
+    cmd = '/etc/init.d/network restart'
+    os.system(cmd)
+    time.sleep(g_sta_config_time)
+    print 'sta done'
+
+    cmd = '/etc/init.d/firewall stop'
+    os.system(cmd)
+    time.sleep(g_firewall_stop_time)
+    print 'firewall stop done'
+
+
+def Wifi2LanAndSerial(inSocket, outAddr, outSerial):
+    outSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    while True:
+        (recvData, clientAddr) = inSocket.recvfrom(g_buf_size)
         print 'recv from:',
         print clientAddr,
         print 'data:',
@@ -68,11 +90,11 @@ def Wifi2LanAndSerial(inSocket, outAddr, outSerial):
         print recvData
         print
 
-def Serial2Wifi(ser, wifiAddr):  
-    outSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) 
+def Serial2Wifi(ser, wifiAddr):
+    outSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-    while True: 
-        recvData = ser.read(g_buf_size)
+    while True:
+        recvData = ser.read(g_serial_buf_size)
         print 'recv from:',
         print ser.portstr,
         print ser.baudrate,
@@ -86,15 +108,15 @@ def Serial2Wifi(ser, wifiAddr):
         print wifiAddr
         print
 
-def Lan2Wifi(inSocket, outAddr):  
-    outSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) 
+def Lan2Wifi(inSocket, outAddr):
+    outSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     while True:
-        (recvData, clientAddr) = inSocket.recvfrom(g_buf_size) 
+        (recvData, clientAddr) = inSocket.recvfrom(g_buf_size)
         print 'recv from:',
         print clientAddr,
         print 'data:',
-        print recvData 
+        print recvData
 
         outSocket.sendto(recvData, outAddr)
         print 'send:',
@@ -111,26 +133,40 @@ if __name__ == '__main__':
     wifi_out_addr = (g_wifi_out_ip, g_wifi_out_port)
 
     lanInSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    lanInSocket.bind(lan_in_addr) 
+    lanInSocket.bind(lan_in_addr)
 
     wifiInSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    wifiInSocket.bind(wifi_in_addr) 
+    wifiInSocket.bind(wifi_in_addr)
 
     # open serial
     ser = serial.Serial(g_serial_name)
     ser.timeout = None
     ser.baudrate = g_baudrate
 
+    print 'wait system startup'
     time.sleep(g_sleep_time)
 
+    print 'begin config system'
+    Config5350()
+
+    print 'begin listen port:'
+    print 'listen by',
+    print wifi_in_addr
+
+    print 'listen by',
+    print lan_in_addr
+
+    print 'listen by',
+    print str(ser.portstr) + ' ' + str(ser.baudrate)
+
     # wifi to lan&serial
-    thread.start_new_thread(Wifi2LanAndSerial, (wifiInSocket, lan_out_addr, ser))  
+    thread.start_new_thread(Wifi2LanAndSerial, (wifiInSocket, lan_out_addr, ser))
 
     # serial to wifi
-    thread.start_new_thread(Serial2Wifi, (ser, wifi_out_addr))  
+    thread.start_new_thread(Serial2Wifi, (ser, wifi_out_addr))
 
     # lan to wifi
-    thread.start_new_thread(Lan2Wifi, (lanInSocket, wifi_out_addr))  
+    thread.start_new_thread(Lan2Wifi, (lanInSocket, wifi_out_addr))
 
     while True:
         print 'radioDaemon working'
