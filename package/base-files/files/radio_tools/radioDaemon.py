@@ -28,13 +28,15 @@ g_promtp_time = 10
 g_wifi_in_ip = '192.168.2.102'
 g_wifi_in_port = 8001
 g_wifi_out_ip = '192.168.2.100'
-g_wifi_out_port = 8002
+#g_wifi_out_port = 8002
+g_wifi_out_port = 8001
 
 # lan interface
 g_lan_in_ip = '192.168.10.1'
 g_lan_in_port = 8001
 g_lan_out_ip = '192.168.10.3'
-g_lan_out_port = 8002
+#g_lan_out_port = 8002
+g_lan_out_port = 8001
 
 # serial interface
 g_serial_name = '/dev/ttyS0'
@@ -43,7 +45,7 @@ g_baudrate = 9600
 # recv bufsize
 g_buf_size = 1024
 
-def NetRouter(inSocket, outAddr):  
+def Wifi2LanAndSerial(inSocket, outAddr, outSerial):  
     outSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) 
     while True: 
         (recvData, clientAddr) = inSocket.recvfrom(g_buf_size) 
@@ -57,11 +59,14 @@ def NetRouter(inSocket, outAddr):
         print recvData,
         print 'to:',
         print outAddr
-        print
-        print
 
-    inSocket.close()
-    outSocket.close()
+        outSerial.write(recvData)
+        print 'send to:',
+        print ser.portstr,
+        print ser.baudrate,
+        print 'data:',
+        print recvData
+        print
 
 def Serial2Wifi(ser, wifiAddr):  
     outSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) 
@@ -69,8 +74,8 @@ def Serial2Wifi(ser, wifiAddr):
     while True: 
         recvData = ser.read(g_buf_size)
         print 'recv from:',
-        print serialName,
-        print baudrate,
+        print ser.portstr,
+        print ser.baudrate,
         print 'data:',
         print recvData
 
@@ -80,26 +85,23 @@ def Serial2Wifi(ser, wifiAddr):
         print 'to:',
         print wifiAddr
         print
-        print
 
-    ser.close()
-    outSocket.close()
+def Lan2Wifi(inSocket, outAddr):  
+    outSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) 
 
-
-def Wifi2Serial(inSocket, ser):  
     while True:
         (recvData, clientAddr) = inSocket.recvfrom(g_buf_size) 
         print 'recv from:',
         print clientAddr,
         print 'data:',
         print recvData 
-        
-        w = ser.write(recvData)
-        print 'send to:',
-        print serialName,
-        print baudrate,
-        print 'data:',
-        print recvData
+
+        outSocket.sendto(recvData, outAddr)
+        print 'send:',
+        print recvData,
+        print 'to:',
+        print outAddr
+        print
 
 if __name__ == '__main__':
     wifi_in_addr = (g_wifi_in_ip, g_wifi_in_port)
@@ -121,14 +123,14 @@ if __name__ == '__main__':
 
     time.sleep(g_sleep_time)
 
-    # wifi to lan
-    thread.start_new_thread(NetRouter, (wifiInSocket, lan_out_addr))  
-    # lan to wifi
-    thread.start_new_thread(NetRouter, (lanInSocket, wifi_out_addr))  
-    # wifi to serial
-    thread.start_new_thread(Wifi2Serial, (wifiInSocket, ser))  
+    # wifi to lan&serial
+    thread.start_new_thread(Wifi2LanAndSerial, (wifiInSocket, lan_out_addr, ser))  
+
     # serial to wifi
     thread.start_new_thread(Serial2Wifi, (ser, wifi_out_addr))  
+
+    # lan to wifi
+    thread.start_new_thread(Lan2Wifi, (lanInSocket, wifi_out_addr))  
 
     while True:
         print 'radioDaemon working'
