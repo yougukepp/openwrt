@@ -22,10 +22,11 @@ import socket
 import thread
 import serial
 
-g_sleep_time = 30
+g_sleep_time = 1
 g_cp_time = 2
 g_sta_config_time = 10
 g_firewall_stop_time = 3
+g_config_time = 10
 g_promtp_time = 3
 
 # wifi interface
@@ -56,15 +57,15 @@ def Config5350():
     time.sleep(g_cp_time)
     print 'cp done'
 
-    cmd = '/etc/init.d/network restart && echo ok'
-    os.system(cmd)
-    time.sleep(g_sta_config_time)
-    print 'sta done'
-
     cmd = '/etc/init.d/firewall stop && echo ok'
     os.system(cmd)
     time.sleep(g_firewall_stop_time)
     print 'firewall stop done'
+
+    cmd = '/etc/init.d/network restart && echo ok'
+    os.system(cmd)
+    time.sleep(g_sta_config_time)
+    print 'sta done'
 
 
 def Wifi2LanAndSerial(inSocket, outAddr, outSerial):
@@ -138,10 +139,11 @@ if __name__ == '__main__':
     ser.baudrate = g_baudrate
 
     print 'wait system startup'
-    time.sleep(g_sleep_time)
+    #time.sleep(g_sleep_time)
 
     print 'begin config system'
-    Config5350()
+    #Config5350() 
+    #time.sleep(g_config_time)
 
     lanInSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     lanInSocket.bind(lan_in_addr)
