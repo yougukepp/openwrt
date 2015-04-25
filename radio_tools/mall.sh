@@ -1,8 +1,9 @@
 #!/bin/bash
 #make clean
 
-#cp ./radio_tools/5350.config ./.config
-cp ./radio_tools/5350.config.client ./.config
+cp ./radio_tools/5350.config ./.config
+#cp ./radio_tools/5350.config.client ./.config
+cp ./radio_tools/5350.config.master ./.config
 
 make menuconfig
 make -j4 #V=99
