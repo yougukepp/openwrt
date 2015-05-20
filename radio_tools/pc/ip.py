@@ -4,6 +4,7 @@
 import socket
 
 ipList = socket.gethostbyname_ex(socket.gethostname())
-ipList = socket.gethostbyname(socket.gethostname())
-print(ipList)
+#ipList = socket.gethostbyname(socket.gethostname())
+l = len(ipList[2])
+print(l)
 
