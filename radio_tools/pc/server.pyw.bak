@@ -1,0 +1,366 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+#TODO: 服用自动 手动两套代码
+
+import time
+import ctypes
+import threading
+
+from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QMainWindow
+from PyQt5.QtCore import QTimer
+from PyQt5.uic import loadUiType,loadUi
+
+# UI读取
+gUIClass = loadUiType('server.ui')
+
+def GetNowStr():
+    t = time.localtime()
+    nowStr = '%4d-%02d-%02d %02d:%02d:%02d' % (t.tm_year, t.tm_mon, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec) 
+    
+    return nowStr
+
+
+class RecvThread(threading.Thread):  
+    def __init__(self, recv , socket, msg, devStr):
+        threading.Thread.__init__(self)
+        self.mRecv = recv
+        self.mSocket = socket
+        self.mMsg = msg
+        self.mDevStr = devStr
+  
+    def run(self):  
+        while True:
+          recvText = self.mRecv(self.mSocket)
+          # 远端关闭
+          if '' == recvText:
+            break
+          print('recv:' + str(self.mSocket) + ',' + str(recvText))
+          msg = str(self.mDevStr) + "\t" + GetNowStr() + "\n" + recvText + '\n\n'
+          self.mMsg.append(msg)
+
+class ServerDll():
+    def __init__(self):
+      # dll 提供功能 
+      self.mServerDll = ctypes.CDLL('server.dll')
+
+      # 启动 listen accept
+      func = self.mServerDll.ServerInit 
+      func.argtypes = []
+      func.restypes = None 
+      func()
+
+    # 以下为对dll ServerGetDevList函数的封装
+    def GetDevList(self):
+        # 启动 获取设备列表
+        func = self.mServerDll.ServerGetDevList
+        func.argtypes = [ctypes.c_char_p, ctypes.c_uint]
+        func.restypes = ctypes.c_uint
+
+        # 构造一个1024 bytes 的buf
+        buf_size = 1024
+        buf = b'\0' * buf_size
+        rst = func(buf, buf_size)
+        # 滤除多余的字节b'\x00'
+        buf = buf.translate(None, b'\x00')
+
+        # 转化为设备列表
+        s = bytes.decode(buf) 
+        devList = s.split(',')
+
+        return devList
+
+    # 以下为对dll ServerOpen函数的封装
+    def Open(self, devStr):
+        # 打开客户端套接字
+        func = self.mServerDll.ServerOpen
+        func.argtypes = [ctypes.c_char_p]
+        func.restypes = ctypes.c_uint
+        buf = str.encode(devStr)
+        socket = func(buf)
+
+        return socket
+
+    # 以下为对dll ServerClose函数的封装
+    def Close(self, socket):
+        # 关闭客户端套接字
+        func = self.mServerDll.ServerClose
+        func.argtypes = [ctypes.c_uint]
+        func.restypes = None
+
+        func(socket)
+
+    # 以下为对dll ServerSend函数的封装
+    def Send(self, socket, sendText):
+        func = self.mServerDll.ServerSend 
+        func.argtypes = [ctypes.c_uint, ctypes.c_char_p, ctypes.c_uint]
+        func.restypes = None
+
+        buf = str.encode(sendText)
+        buf_size = len(buf)
+        func(socket, buf, buf_size)
+
+    # 以下为对dll ServerRecv函数的封装
+    def Recv(self, socket):
+        # 接收数据
+        func = self.mServerDll.ServerRecv
+        func.argtypes = [ctypes.c_uint, ctypes.c_char_p, ctypes.c_uint]
+        func.restypes = ctypes.c_uint
+
+        # 构造一个1024 bytes 的buf
+        buf_size = 1024
+        buf = b'\0' * buf_size
+        # 阻塞
+        rst = func(socket, buf, buf_size);
+        # 滤除多余b'\x00' 
+        buf = buf.translate(None, b'\x00')
+        
+        recvText = bytes.decode(buf) 
+        return recvText
+
+    # 以下为对dll ServerDeInit函数的封装
+    def DeInit(self):
+        func = self.mServerDll.ServerDeInit 
+        func.argtypes = []
+        func.restypes = None 
+        func() 
+
+class ServerMainWindow(QMainWindow):
+    def __init__(self, parent=None):
+        QMainWindow.__init__(self, parent)
+
+        self.mDevSocket = 0         # 设备套接字
+
+        # 创建serverdll对象
+        self.mServerDll = ServerDll()
+
+        # GUI初始化
+        self.mUi = gUIClass[0]()
+        self.mUi.setupUi(self)
+
+        # 核心tabWidget控件
+        self.mTabWidget = self.mUi.tabWidget
+        self.mTabWidget.removeTab(1)
+        #self.mTabWidget.currentChanged.connect(self.TabChangeSlot)
+
+        # 手动 版本的控件
+        self.mManInitPushButton = self.mUi.manInitPushButton
+        self.mManOpenPushButton = self.mUi.manOpenPushButton
+        self.mManClosePushButton = self.mUi.manClosePushButton
+        self.mManSendPushButton = self.mUi.manSendPushButton
+        self.mManRecvPushButton = self.mUi.manRecvPushButton
+        self.mManDevlistWidget = self.mUi.manDevlistWidget
+        self.mManSendPlainTextEdit = self.mUi.manSendPlainTextEdit
+        self.mManRecvPlainTextEdit = self.mUi.manRecvPlainTextEdit
+        self.mManOpenPushButton.setEnabled(False)
+        self.mManClosePushButton.setEnabled(False)
+        self.mManSendPushButton.setEnabled(False)
+        self.mManRecvPushButton.setEnabled(False)
+        self.mManDevlistWidget.setEnabled(False)
+        self.mManSendPlainTextEdit.setEnabled(False)
+        self.mManRecvPlainTextEdit.setEnabled(False)
+        # 手动版本信号与槽
+        self.mManInitPushButton.clicked.connect(self.ManInit)
+        self.mManOpenPushButton.clicked.connect(self.ManOpen)
+        self.mManClosePushButton.clicked.connect(self.ManClose)
+        self.mManSendPushButton.clicked.connect(self.ManSend)
+        self.mManRecvPushButton.clicked.connect(self.ManRecv)
+
+        # 自动版本
+        self.mDevDict = {}        # 设备套接字字典 用于存放devStr:(socket, recvThread, str)对
+        # 自动版本的控件
+        self.mAutoInitPushButton = self.mUi.autoInitPushButton
+        self.mAutoOpenPushButton = self.mUi.autoOpenPushButton
+        self.mAutoClosePushButton = self.mUi.autoClosePushButton
+        self.mAutoSendPushButton = self.mUi.autoSendPushButton
+        self.mAutoDevlistWidget = self.mUi.autoDevlistWidget
+        self.mAutoRecvPlainTextEdit = self.mUi.autoRecvPlainTextEdit
+        self.mAutoSendLineEdit = self.mUi.autoSendLineEdit
+        self.mAutoInitPushButton.setEnabled(True)
+        self.mAutoOpenPushButton.setEnabled(False)
+        self.mAutoClosePushButton.setEnabled(False)
+        self.mAutoSendPushButton.setEnabled(False)
+        self.mAutoDevlistWidget.setEnabled(False)
+        self.mAutoRecvPlainTextEdit.setEnabled(False)
+        self.mAutoSendLineEdit.setEnabled(False)
+        # 自动版本信号与槽
+        self.mAutoInitPushButton.clicked.connect(self.AutoInit)
+        self.mAutoOpenPushButton.clicked.connect(self.AutoOpen)
+        self.mAutoClosePushButton.clicked.connect(self.AutoClose)
+        self.mAutoSendPushButton.clicked.connect(self.AutoSend)
+        # 自动刷新定时器
+        self.mFlushTimer = QTimer()
+        self.mFlushTimer.timeout.connect(self.AutoFlush)
+
+    def ManInit(self):
+        # 刷新设备列表控件
+        devList = self.mServerDll.GetDevList()
+
+        self.mManDevlistWidget.clear()
+
+        hasDevice = False
+        for devStr in devList: 
+          if len(devStr) > 0:
+            self.mManDevlistWidget.addItem(devStr)
+            hasDevice = True
+
+        if hasDevice:
+          self.mManInitPushButton.setEnabled(False)
+          self.mManDevlistWidget.setEnabled(True)
+          self.mManOpenPushButton.setEnabled(True)
+
+    def ManOpen(self):
+        devStr = self.mManDevlistWidget.currentItem().text()
+        self.mDevSocket = self.mServerDll.Open(devStr)
+        
+        self.mManInitPushButton.setEnabled(False)
+        self.mManOpenPushButton.setEnabled(False)
+        self.mManClosePushButton.setEnabled(True)
+        self.mManSendPushButton.setEnabled(True)
+        self.mManRecvPushButton.setEnabled(True)
+        self.mManSendPlainTextEdit.setEnabled(True)
+
+    def ManClose(self):
+        # 关闭客户端套接字
+        self.mServerDll.Close(self.mDevSocket)
+
+        # 初始化 扫描
+        self.ManInit()
+
+        self.mManSendPlainTextEdit.clear()
+        self.mManRecvPlainTextEdit.clear()
+
+        self.mManClosePushButton.setEnabled(False)
+        self.mManSendPushButton.setEnabled(False)
+        self.mManRecvPushButton.setEnabled(False)
+        self.mManSendPlainTextEdit.setEnabled(False)
+
+    def ManSend(self):
+        sendText = self.mManSendPlainTextEdit.toPlainText()
+        self.mServerDll.Send(self.mDevSocket, sendText)
+        self.mManSendPlainTextEdit.clear()
+
+    def ManRecv(self):
+        recvText = self.mServerDll.Recv(self.mDevSocket)
+        self.mManRecvPlainTextEdit.appendPlainText(recvText)
+
+    def TabChangeSlot(self, index):
+        # index == 0 手动
+        # index == 1 自动
+        if 1 == index:
+          # 启动自动刷新
+          self.mFlushTimer.start(1000) # 1s
+        elif 0 == index: 
+          # 启动自动刷新
+          self.mFlushTimer.stop()
+          # 关闭 Recv线程
+          self.StopWorkerThread()
+
+    def AutoInit(self):
+        # 刷新设备列表控件
+        devList = self.mServerDll.GetDevList()
+
+        self.mAutoDevlistWidget.clear()
+
+        hasDevice = False
+        for devStr in devList: 
+          if len(devStr) > 0:
+            self.mAutoDevlistWidget.addItem(devStr)
+            hasDevice = True
+
+        if hasDevice:
+          # 启动后台线程
+          self.StartWorkerThread()
+          self.mAutoInitPushButton.setEnabled(False)
+          self.mAutoDevlistWidget.setEnabled(True)
+          self.mAutoOpenPushButton.setEnabled(True)
+
+    def AutoOpen(self):
+        """
+        对于自动型的界面 mDevSocket 只作用于发(server to dev)，收所有设备的数据
+        """
+        devStr = self.mAutoDevlistWidget.currentItem().text()
+        self.mDevSocket = self.mServerDll.Open(devStr)
+
+        self.mAutoDevlistWidget.setEnabled(False)
+        self.mAutoOpenPushButton.setEnabled(False)
+        self.mAutoClosePushButton.setEnabled(True)
+        self.mAutoSendPushButton.setEnabled(True)
+        self.mAutoSendLineEdit.setEnabled(True)
+
+    def AutoClose(self):
+        self.mServerDll.Close(self.mDevSocket)
+
+        # 初始化 扫描
+        self.AutoInit()
+        #self.mAutoSendLineEdit.clear()
+        #self.mAutoRecvPlainTextEdit.clear()
+
+        self.mAutoDevlistWidget.setEnabled(True)
+        self.mAutoOpenPushButton.setEnabled(True)
+        self.mAutoClosePushButton.setEnabled(False)
+        self.mAutoSendPushButton.setEnabled(False)
+        self.mAutoRecvPlainTextEdit.setEnabled(False)
+        self.mAutoSendLineEdit.setEnabled(False)
+
+    def AutoSend(self):
+        sendText = self.mAutoSendLineEdit.text()
+        self.mServerDll.Send(self.mDevSocket, sendText)
+        self.mAutoSendLineEdit.clear() 
+        
+        # TODO: 加入发送的数据
+        msg = "server" + "\t" + GetNowStr() + "\n" + sendText + '\n\n'
+
+    def AutoFlush(self):
+        #print("AutoFlush" + GetNowStr())
+        msgAll = ''
+        for dev in self.mDevDict:
+          print("AutoFlush" + GetNowStr() + str(self.mDevDict[dev][2]))
+          dic = self.mDevDict
+          for s in dic[dev][2]:
+            msgAll += s
+        self.mAutoRecvPlainTextEdit.clear()
+        self.mAutoRecvPlainTextEdit.setPlainText(msgAll)
+
+    def closeEvent(self, closeEvent):
+        # 停止刷新
+        self.mFlushTimer.stop()
+        # 停止后台线程
+        self.StopWorkerThread()
+        # server.dll清理工作
+        self.mServerDll.DeInit()
+
+    def StartWorkerThread(self):
+        # 1、将每个客户端套接字的recv起一个线程
+        # 2、将接收的数据存入字符串 将字符串显示与mAutoRecvPlainTextEdit 
+        devList = self.mServerDll.GetDevList()
+
+        assert '' != devList[0]
+
+        for devStr in devList: 
+          if '' == devStr:
+              continue
+
+          socket = self.mServerDll.Open(devStr)
+          msg = []
+          # 单独的线程(后台)接收数据
+          recvThread = RecvThread(self.mServerDll.Recv, socket, msg, devStr)
+          self.mDevDict[devStr] = (socket, recvThread, msg)
+
+          recvThread.start()
+
+    def StopWorkerThread(self):
+        # 结束接收数据线程
+        for socket in self.mDevDict:
+          print(socket)
+
+if __name__ == "__main__":
+    import sys
+    app = QApplication(sys.argv)
+
+    win = ServerMainWindow()
+    win.show()
+
+    sys.exit(app.exec_())
+

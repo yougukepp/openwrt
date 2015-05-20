@@ -14,3 +14,6 @@ tmp/
 bin/
 feeds/
 
+# python 临时文件
+*.pyc
+
