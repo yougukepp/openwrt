@@ -6,6 +6,9 @@ import ctypes
 import socket
 import threading
 
+import serial
+import serial.tools.list_ports
+
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QMainWindow
 from PyQt5.QtWidgets import QMessageBox
@@ -21,6 +24,10 @@ gUIClass = loadUiType('PCTools.ui')
 # 主模块 对话日志
 gMasterTalkLog = ''
 gMasterTalkLogLock = threading.Lock()
+
+# 从模块 对话日志
+gFollowerTalkLog = ''
+gFollowerTalkLogLock = threading.Lock()
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
@@ -38,10 +45,15 @@ class MainWindow(QMainWindow):
         # 配置页面除能
         self.mTabConfig = self.mUi.tabConfig
         self.mTabConfig.setEnabled(False)
+        # TODO: 实现配置功能后 加入相关逻辑
+        # 删除配置tab 
+        self.mTabWidget.removeTab(2)
+
+
+
 
         # 主模块 除pushButtonMasterScan外 全部除能
         self.mPushButtonMasterScan = self.mUi.pushButtonMasterScan
-
         self.mComboBoxMaster = self.mUi.comboBoxMaster
         self.mComboBoxMaster.setEnabled(False)
         self.mPushButtonMasterTalk = self.mUi.pushButtonMasterTalk
@@ -51,7 +63,7 @@ class MainWindow(QMainWindow):
         self.mPlainTextEditMaster.setCenterOnScroll(True)
         self.mLineEditMaster = self.mUi.lineEditMaster
         self.mLineEditMaster.setEnabled(False)
-        self.mPushButtonMasterSend =self.mUi.pushButtonMasterSend
+        self.mPushButtonMasterSend = self.mUi.pushButtonMasterSend
         self.mPushButtonMasterSend.setEnabled(False)
 
         # 主模块 扫描从模块 
@@ -62,11 +74,50 @@ class MainWindow(QMainWindow):
         # 主模块 发送消息
         self.mPushButtonMasterSend.clicked.connect(self.MasterSend)
         # 主模块 接收消息使用独立线程
-        self.mMasterRecvThread = None
+        self.mMasterNetRecvThread = None
 
         # 主模块定时器 更新 mPlainTextEditMaster
         self.mPlainTextEditMasterTimer = QTimer()
         self.mPlainTextEditMasterTimer.timeout.connect(self.UpdatePlainTextEditMaster)
+
+
+
+
+
+        # 从模块 除radioButton外 全部除能
+        self.mRadioButtonSerial = self.mUi.radioButtonSerial
+        self.mRadioButtonNet = self.mUi.radioButtonNet
+        self.mRadioButtonSerial.toggled.connect(self.FollowerCommunicationChange)
+        #self.mRadioButtonNet.toggled.connect(self.FollowerCommunicationChange) # 两radio连接一个即可
+        self.mComboBoxFollower = self.mUi.comboBoxFollower
+        self.mComboBoxFollower.setEnabled(False)
+        self.mPlainTextEditFollower = self.mUi.plainTextEditFollower
+        self.mPlainTextEditFollower.setEnabled(False)
+        self.mLineEditFollower = self.mUi.lineEditFollower
+        self.mLineEditFollower.setEnabled(False)
+        self.mPushButtonFollowerSend = self.mUi.pushButtonFollowerSend
+        self.mPushButtonFollowerSend.setEnabled(False)
+        self.mPushButtonFollowerTalk = self.mUi.pushButtonFollowerTalk
+        self.mPushButtonFollowerTalk.setEnabled(False) 
+        
+        # 从模块 对话 非对话 模式切换
+        self.mFollowerTalking = False   # 标记从模块是否处于对话中
+        self.mPushButtonFollowerTalk.clicked.connect(self.FollowerTalk)
+
+        self.mRadioButtonSerial.setChecked(True)
+
+        # 从模块 发送消息
+        self.mPushButtonFollowerSend.clicked.connect(self.FollowerSend)
+
+        # 从模块 接收消息使用独立线程
+        self.mFollowerRecvThread = None
+        self.mFollowerCommunicationPort = None
+        # 从模块定时器 更新 mPlainTextEditMaster
+        self.mPlainTextEditFollowerTimer = QTimer()
+        self.mPlainTextEditFollowerTimer.timeout.connect(self.UpdatePlainTextEditFollower)
+
+
+
 
     # 重绘
     def paintEvent(self, event): 
@@ -74,9 +125,14 @@ class MainWindow(QMainWindow):
 
     # 退出
     def closeEvent(self, event):
-        # 接收退出
-        self.mMasterRecvThread.stop()
-        self.mMasterRecvThread.join()
+        # 接收线程退出
+        if self.mMasterNetRecvThread:
+            self.mMasterNetRecvThread.stop()
+            self.mMasterNetRecvThread.join()
+
+        if self.mFollowerRecvThread:
+            self.mFollowerRecvThread.stop()
+            self.mFollowerRecvThread.join()
 
     # 以下工具函数移动入独立的文件
     def MasterScan(self): 
@@ -94,6 +150,42 @@ class MainWindow(QMainWindow):
             self.mComboBoxMaster.setEnabled(True)
             self.mPushButtonMasterTalk.setEnabled(True)
 
+    def CommunicationBySerial(self):
+        if self.mRadioButtonSerial.isChecked():
+            return True
+        else:
+            return False
+
+    def FollowerCommunicationChange(self, checked):
+        if self.CommunicationBySerial():
+            self.mComboBoxFollower.clear()
+            allSerial = serial.tools.list_ports.comports()
+            for s in allSerial:
+                self.mComboBoxFollower.addItem(s[0])
+                #print(s[0])
+        else: #网口
+            self.mComboBoxFollower.clear()
+            ips = self.GetLocalIpList()
+            for ip in ips:
+                self.mComboBoxFollower.addItem(ip)
+                #print(ip)
+
+        if self.mComboBoxFollower.count() > 0: 
+            self.mComboBoxFollower.setEnabled(True)
+            self.mPushButtonFollowerTalk.setEnabled(True)
+
+
+    def UpdatePlainTextEditFollower(self):
+        if not self.mFollowerTalking: # 回话状态才更新
+            return
+
+        self.mPlainTextEditMaster.clear()
+        gFollowerTalkLogLock.acquire() # 操作日志 需要锁
+        self.mPlainTextEditFollower.setPlainText(gFollowerTalkLog)
+        gFollowerTalkLogLock.release() # 操作日志 需要锁
+
+        #print('未实现 UpdatePlainTextEditFollower')
+
     def UpdatePlainTextEditMaster(self):
         """
         研究算法 加速更新速度
@@ -108,6 +200,53 @@ class MainWindow(QMainWindow):
         self.mPlainTextEditMaster.setPlainText(gMasterTalkLog)
         gMasterTalkLogLock.release() # 操作日志 需要锁
 
+    def FollowerTalk(self):
+        # 切换状态
+        self.mFollowerTalking = not self.mFollowerTalking
+
+        # 依据新状态 更新控件状态
+        if self.mFollowerTalking: # 对话状态 
+            # 启动监听线程
+            if self.CommunicationBySerial():
+                comName = self.mComboBoxFollower.currentText()
+                baurdRate = self.mConfiger.GetValue('fllower', 'baudrate') # 主设备 监听端口
+                bufSize = int(self.mConfiger.GetValue('fllower', 'bufsize'))
+                self.mFollowerCommunicationPort = serial.Serial(comName)
+                self.mFollowerCommunicationPort.baudrate = baurdRate
+                #print(addr)
+                #print(bufSize)
+                self.mFollowerRecvThread = ComRecvThread(self.mFollowerCommunicationPort, bufSize)
+            else:
+                ip = self.mComboBoxFollower.currentText() 
+                port = int(self.mConfiger.GetValue('fllower', 'port')) # 从设备 监听端口
+                bufSize = int(self.mConfiger.GetValue('fllower', 'bufsize')) # 主设备 监听buf大小 
+                addr = (ip, port) 
+                self.mFollowerRecvThread = NetRecvThread(addr, bufSize)
+
+            self.mRadioButtonSerial.setEnabled(False)
+            self.mRadioButtonNet.setEnabled(False)
+            self.mComboBoxFollower.setEnabled(False)
+            self.mPlainTextEditFollower.setEnabled(True)
+            self.mLineEditFollower.setEnabled(True)
+            self.mPushButtonFollowerSend.setEnabled(True)
+            self.mPushButtonFollowerTalk.setEnabled(True)
+            self.mPushButtonFollowerTalk.setText('停止对话')
+
+            self.mFollowerRecvThread.start() 
+            self.mPlainTextEditFollowerTimer.start(1000) # 使用配置项
+        else: # 非 对话状态
+            self.mFollowerRecvThread.stop()
+            self.mFollowerRecvThread.join()
+            self.mPlainTextEditFollowerTimer.stop()
+
+            self.mRadioButtonSerial.setEnabled(True)
+            self.mRadioButtonNet.setEnabled(True)
+            #self.mPushButtonFollowerTalk.setEnabled(False)
+            #self.mComboBoxFollower.setEnabled(False)
+            self.mPlainTextEditFollower.setEnabled(False)
+            self.mLineEditFollower.setEnabled(False)
+            self.mPushButtonFollowerSend.setEnabled(False)
+            self.mPushButtonFollowerTalk.setText('开始对话')
 
     def MasterTalk(self):
         # 切换状态
@@ -127,7 +266,7 @@ class MainWindow(QMainWindow):
             port = int(self.mConfiger.GetValue('master', 'port')) # 主设备 监听端口
             bufSize = int(self.mConfiger.GetValue('master', 'bufsize')) # 主设备 监听buf大小
             addr = (ip, port) 
-            self.mMasterRecvThread = RecvThread(addr, bufSize)
+            self.mMasterNetRecvThread = NetRecvThread(addr, bufSize)
 
             # 设置控件
             self.mPushButtonMasterScan.setEnabled(False) 
@@ -139,13 +278,13 @@ class MainWindow(QMainWindow):
             #print('对话状态')
 
 
-            self.mMasterRecvThread.start() 
+            self.mMasterNetRecvThread.start() 
             self.mPlainTextEditMasterTimer.start(1000) # 使用配置项
         else: 
             #print('非对话状态')
             # 关闭接收线程
-            self.mMasterRecvThread.stop()
-            self.mMasterRecvThread.join()
+            self.mMasterNetRecvThread.stop()
+            self.mMasterNetRecvThread.join()
             self.mPlainTextEditMasterTimer.stop()
 
             # 设置控件
@@ -158,10 +297,40 @@ class MainWindow(QMainWindow):
             self.mComboBoxMaster.setEnabled(True)
             self.mPushButtonMasterScan.setEnabled(True) 
 
+    def FollowerSend(self):
+        data = self.mLineEditFollower.text()
+        byteData = data.encode(encoding="utf-8")
+        log = ''
+
+        if self.CommunicationBySerial(): # 串口
+            self.ComSend(self.mFollowerCommunicationPort, byteData) 
+
+            name = self.mFollowerCommunicationPort.port
+            baudRate = self.mFollowerCommunicationPort.baudrate
+
+            log = GetLogTitle(name, baudRate) + '\n'
+        else: 
+            ip = self.mConfiger.GetValue('fllower', 'netip')
+            ip += '.'
+            ip += self.mConfiger.GetValue('fllower', 'lanip')
+            port = int(self.mConfiger.GetValue('fllower', 'port')) # 从设备发往从模块的监听端口
+            self.UdpSend(ip, port, byteData)
+
+            log = GetLogTitle(ip, port) + '\n'
+
+        # 加入到日志
+        log += data + '\n\n'
+        print(log)
+        gFollowerTalkLogLock.acquire() # 操作日志 需要锁
+        global gFollowerTalkLog
+        gFollowerTalkLog += log
+        gFollowerTalkLogLock.release() # 操作日志 需要锁
+
+        self.mLineEditFollower.clear()
 
     def MasterSend(self):
         ip = self.mComboBoxMaster.currentText()
-        port = int(self.mConfiger.GetValue('fllower', 'port')) # 主模块发往从模块的监听端口
+        port = int(self.mConfiger.GetValue('fllower', 'port')) # 主设备发从模块的监听端口
         data = self.mLineEditMaster.text()
 
         byteData = data.encode(encoding="utf-8")
@@ -216,7 +385,17 @@ class MainWindow(QMainWindow):
         print(addr)
         udpSendSocket.close()
 
-class RecvThread(threading.Thread):  
+    def ComSend(self, ser, byteData):
+        ser.write(byteData)
+
+        name = ser.port
+        baurdRate = ser.baudrate
+        print('send %s' % byteData, end = '')
+        print('to ', end = '')
+        print(name + ' ', end = '')
+        print(baurdRate)
+
+class NetRecvThread(threading.Thread):  
     def __init__(self, addr, bufSize):
         threading.Thread.__init__(self)
         self.mAddr = addr
@@ -265,10 +444,64 @@ class RecvThread(threading.Thread):
     def stop(self):
         self.mRunning = False
 
-def GetLogTitle(ip, port):
+class ComRecvThread(threading.Thread):  
+    def __init__(self, ser, bufSize):
+        threading.Thread.__init__(self)
+        self.mSerial = ser
+        self.mBufSize = bufSize
+        self.mRunning = True
+
+    def run(self):  
+        ser = self.mSerial
+        name = ser.port
+        baurdRate = ser.baudrate
+        print('开始监听 ', end = '')
+        print(name + ' ', end = '')
+        print(baurdRate, end = '')
+        print('... ')
+
+        ser.timeout = 1 # 1s timeout for join
+        while self.mRunning:
+            recvData = ser.read(self.mBufSize) 
+            if 0 == len(recvData): # 仅当接收到数据时处理
+                continue
+
+            recvStr = str(recvData)
+            print(recvStr)
+            #recvStr = recvData.decode(encoding="utf-8") 
+
+            name = ser.port
+            baurdRate = ser.baudrate 
+            
+            log = GetLogTitle(name, baurdRate)  + '\n'
+            log += recvStr + '\n\n' 
+            
+            gFollowerTalkLogLock.acquire() # 操作日志 需要锁
+            global gFollowerTalkLog
+            gFollowerTalkLog += log
+            gFollowerTalkLogLock.release() # 操作日志 需要锁 
+                
+            print('recv %s ' % recvStr, end = '')
+            print('from ', end = '') 
+            print(name + ' ', end = '')
+            print(baurdRate, end = '')
+
+        name = ser.port
+        baurdRate = ser.baudrate
+        print('结束监听 ', end = '')
+        print(name + ' ', end = '')
+        print(baurdRate, end = '')
+        print('... ')
+
+        ser.close()
+
+    def stop(self):
+        self.mRunning = False
+
+def GetLogTitle(name1, name2):
     t = time.localtime()
     nowStr = '%4d-%02d-%02d %02d:%02d:%02d' % (t.tm_year, t.tm_mon, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec) 
-    title = str(ip) + ':' + str(port) + '\t' + nowStr
+    title = str(name1) + ':' + str(name2) + '\t' + nowStr
 
     return title
 
