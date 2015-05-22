@@ -8,7 +8,7 @@ import time
 import socket
 import threading
 
-class PCPinger:
+class Pinger:
     def __init__(self):
         self.mIpList = []
         self.mIndex = 0
@@ -35,7 +35,7 @@ class PCPinger:
 
     def Ping(self, timeout):
         socketIcmp = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.getprotobyname("icmp"))
-        socketIcmp.settimeout(timeout)
+        socketIcmp.settimeout(timeout/1000)
 
         icmpRecvThread = IcmpRecvThread(socketIcmp)
         icmpRecvThread.start()
@@ -92,6 +92,9 @@ class IcmpSender:
         packet = self.MakeIcmpPacket(data)
         for ip in ipPool:  # ip 作为迭代元素
             sock.sendto(packet, (ip, 0))
+            print('send %s' % str(packet), end = '')
+            print('to ', end = '')
+            print(ip)
 
 class IcmpRecvThread(threading.Thread):
     '''
@@ -110,17 +113,17 @@ class IcmpRecvThread(threading.Thread):
         self.mIpPool = {}
 
     def run(self):
-        #print('Icmp Recv Thread Start...')
+        print('Icmp Recv Thread Start...')
         while True:
             try:
                 sock = self.mSock
                 (recvData, addr)= sock.recvfrom(self.mBufSize)
                 ip = addr[0]
                 self.mIpPool[ip] = None
-                #print(ip)
+                print(ip)
             except socket.timeout as err: # 超时退出
                 break
-        #print('Icmp Recv Thread End.')
+        print('Icmp Recv Thread End.')
         self.mRunning = False
 
     def Wait(self):
