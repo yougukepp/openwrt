@@ -5,7 +5,7 @@ config interface 'loopback'
         option netmask '255.0.0.0'
 
 config globals 'globals'
-        option ula_prefix 'fd28:3701:6379::/48'
+        option ula_prefix 'fdbc:aaa4:d70e::/48'
 
 config interface 'lan'
         option ifname 'eth0.1'
@@ -15,12 +15,12 @@ config interface 'lan'
         option ipaddr '192.168.10.1'
         option netmask '255.255.255.0'
         option ip6assign '60'
-        option macaddr '7a:20:00:01:4a:88'
+#option macaddr '7a:20:00:02:5d:f0'
 
 config interface 'wan'
         option ifname 'eth0.2'
         option proto 'dhcp'
-        option macaddr '7a:20:00:01:4a:89'
+#option macaddr '7a:20:00:02:5d:f1'
 
 config interface 'wan6'
         option ifname '@wan'
@@ -43,4 +43,5 @@ config switch_vlan
 
 config interface 'wwan'
         option proto 'dhcp'
+
 

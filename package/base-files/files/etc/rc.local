@@ -6,18 +6,21 @@
 cp -rf radio_tools/vimrc /root/.vimrc
 cp -rf radio_tools/bashrc /root/.bashrc
 
-# sta files
-cp radio_tools/sta/* /etc/config/ && sync
+# prepare sta files
+cp radio_tools/sta/wireless /etc/config/ && sync
+cp radio_tools/sta/network /etc/config/ && sync
 echo 'cp sta files done'
 
 # iptables not compile
 #/etc/init.d/firewall stop && echo ok
 #echo 'firewall stop done'
 
-#/etc/init.d/network restart && echo ok
-#echo 'sta done'
+# restart network
+/etc/init.d/network restart && echo ok
+echo 'network done'
 
-#/radio_tools/py/radioDaemon.py &
+# start main proc
+/radio_tools/py/radioDaemon.py &
 
 exit 0
 
