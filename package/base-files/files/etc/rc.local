@@ -2,8 +2,13 @@
 # the system init finished. By default this file does nothing.
 #
 
-#cp radio_tools/sta/* /etc/config/ && sync
-#echo 'cp sta files done'
+# prepare rc
+cp -rf radio_tools/vimrc /root/.vimrc
+cp -rf radio_tools/bashrc /root/.bashrc
+
+# sta files
+cp radio_tools/sta/* /etc/config/ && sync
+echo 'cp sta files done'
 
 # iptables not compile
 #/etc/init.d/firewall stop && echo ok

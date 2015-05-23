@@ -1,12 +1,9 @@
 #!/bin/bash
 #make clean
 
-#cp ./radio_tools/5350.config ./.config
-#cp ./radio_tools/5350.config.client ./.config
-cp ./radio_tools/5350.config.luci ./.config
+cp ./radio_tools/5350.config.client ./.config
 
-
-make menuconfig
+#make menuconfig
 make -j4 #V=99
 
 cp ./bin/ramips/openwrt-ramips-rt305x-mpr-a2-squashfs-sysupgrade.bin /tftp/rt5350
