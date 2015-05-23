@@ -17,3 +17,7 @@ feeds/
 # python 临时文件
 *.pyc
 
+# make 时会生成的文件不跟踪
+package/base-files/files/etc/rc.local
+package/base-files/files/radio_tools/
+
