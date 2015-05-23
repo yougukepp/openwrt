@@ -1,46 +1,35 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# 测试方法:
-# 需要设置一台ap主 一台sta从
-# 电脑WIFI 192.168.10.124  sta
-
-# 主WIFI   192.168.10.1    ap
-
-# 从WIFI   192.168.10.125  sta 上行口
-# 从LAN    192.168.11.1        下行口
-
-# 电脑LAN  192.168.11.124
-
-
-# 主设备就是路由器 无需代码
-# 从设备需要代码
+# master moduler is router, code is not needed
+# this is follower moduler code
 
 import os
+import re
 import time
 import socket
 import thread
-import serial
+#import serial
 
-g_sleep_time = 1
-g_cp_time = 2
-g_sta_config_time = 10
-g_firewall_stop_time = 3
-g_config_time = 10
-g_promtp_time = 3
+g_get_ip_sleep_time = 3
+g_sleep_time = 0
+g_promtp_time = 5
 
+# all port is 8001
 # wifi interface
-g_wifi_in_ip = '192.168.2.103'
+# master device unchanged 192.168.3.3
+# follower moduler changed( becasue of dhcp)
+g_wifi_in_ip = '192.168.3.2' # inited ip to 192.168.3.2(revesed ip)
 g_wifi_in_port = 8001
-g_wifi_out_ip = '192.168.2.100'
-#g_wifi_out_port = 8002
+g_wifi_out_ip = '192.168.3.3'
 g_wifi_out_port = 8001
 
-# lan interface
+# wired interface unchanged
+# follower moduler unchanged 192.168.10.1
+# follower device unchanged  192.168.10.3
 g_lan_in_ip = '192.168.10.1'
 g_lan_in_port = 8001
 g_lan_out_ip = '192.168.10.3'
-#g_lan_out_port = 8002
 g_lan_out_port = 8001
 
 # serial interface
@@ -51,22 +40,30 @@ g_baudrate = 9600
 g_buf_size = 1024
 g_serial_buf_size = 1
 
-def Config5350():
-    cmd = 'cp radio_tools/sta/* /etc/config/ && sync && echo ok'
-    os.system(cmd)
-    time.sleep(g_cp_time)
-    print 'cp done'
+def GetLocalWifiIP():
+    cmd = 'sudo ifconfig ' # remove sudo
+    interfaceName = 'wlan0'
+    cmdStr = cmd + interfaceName
 
-    cmd = '/etc/init.d/firewall stop && echo ok'
-    os.system(cmd)
-    time.sleep(g_firewall_stop_time)
-    print 'firewall stop done'
+    while True: 
+        rstStrList = os.popen(cmdStr).readlines()
+        ipLine = rstStrList[1] 
+         
+        # find ip line
+        m = re.search(r'inet addr:(.*)\s+Bcast', ipLine)
+        #print ipLine
+        
+        ip = ''
+        if m:
+            ip = m.group(1)
+            break
+        else:
+            # sleep goto next loop
+            print "wifi is not ready, wait %s and goto check wifi ip again." % g_get_ip_sleep_time
+            time.sleep(g_get_ip_sleep_time)
+    print ip
 
-    cmd = '/etc/init.d/network restart && echo ok'
-    os.system(cmd)
-    time.sleep(g_sta_config_time)
-    print 'sta done'
-
+    return ip
 
 def Wifi2LanAndSerial(inSocket, outAddr, outSerial):
     outSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -126,7 +123,11 @@ def Lan2Wifi(inSocket, outAddr):
         print outAddr
         print
 
-if __name__ == '__main__':
+if __name__ == '__main__': 
+    # get wifi in ip
+    # global g_wifi_in_ip
+    g_wifi_in_ip = GetLocalWifiIP()
+
     wifi_in_addr = (g_wifi_in_ip, g_wifi_in_port)
     lan_out_addr = (g_lan_out_ip, g_lan_out_port)
 
@@ -139,11 +140,7 @@ if __name__ == '__main__':
     ser.baudrate = g_baudrate
 
     print 'wait system startup'
-    #time.sleep(g_sleep_time)
-
-    print 'begin config system'
-    #Config5350() 
-    #time.sleep(g_config_time)
+    time.sleep(g_sleep_time)
 
     lanInSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     lanInSocket.bind(lan_in_addr)

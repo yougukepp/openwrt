@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# prepare rc
+cp -rf radio_tools/vimrc /root/.vimrc
+cp -rf radio_tools/bashrc /root/.bashrc
+
+
+exit 0
+

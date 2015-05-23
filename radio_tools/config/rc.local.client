@@ -1,0 +1,24 @@
+#!/bin/sh
+
+# prepare rc
+cp -rf radio_tools/vimrc /root/.vimrc
+cp -rf radio_tools/bashrc /root/.bashrc
+
+# prepare sta files
+cp radio_tools/sta/wireless /etc/config/ && sync
+cp radio_tools/sta/network /etc/config/ && sync
+echo 'cp sta files done'
+
+# iptables not compile
+#/etc/init.d/firewall stop && echo ok
+#echo 'firewall stop done'
+
+# restart network
+/etc/init.d/network restart && echo ok
+echo 'network done'
+
+# start main proc
+/radio_tools/py/radioDaemon.py &
+
+exit 0
+

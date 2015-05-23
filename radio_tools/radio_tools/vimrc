@@ -1,0 +1,17 @@
+set nocompatible
+set fileformats=unix,dos
+set number
+set cursorline
+set showcmd
+set so=9999999
+set incsearch
+set hlsearch
+set laststatus=2
+set statusline=FILE:%F%m%r%h\ %w\ \ \ CWD:%{getcwd()}\ \ \ Line(%p%%):%l/%L:%c
+
+if has("autocmd")
+    au BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g'\"" | endif
+endif
+
+set fileencodings=ucs-bom,utf-8,gb18030,gbk,gb2312,big5
+set termencoding=utf-8
