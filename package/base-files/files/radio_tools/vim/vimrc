@@ -1,0 +1,276 @@
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"  文件名字:            .vimrc(_vimrc in windows)
+"
+"  作者:                彭鹏(yougukepp@gmail.com)
+"  描述:                用于初始化VIM工作环境
+"  插件需要:            (.vim目录集成)
+"
+"
+"  命令列表:
+"                       按键                    功能                                    模式
+"
+"                       ;be                     打开缓冲区列表                          N
+"                       ;bs                     横向新建窗口并打开缓冲列表              N
+"                       ;bv                     纵向新建窗口并打开缓冲列表              N
+"
+"                       构件源码
+"                       ;<SPACE>                make编译                                N
+"                       ;cn                     跳到下一个错误                          N
+"                       ;cp                     跳到上一个错误                          N
+"
+"                       侧边 Winmange TagList 标签页
+"                       ;m                      打开(关闭)WinManger                     N 
+"                       ;t                      打开(关闭)TagList                       N
+"                       ;n                      在新标签页中打开文件                    N
+"
+"                       快速命令
+"                       ;w                      保存当前缓冲                            N
+"                       ;q                      退出VIM                                 N
+"
+"                       <F2>                    自动补全                                I
+"
+"                       zc                      关闭当前折叠                            N
+"                       zo                      打开当前折叠                            N
+"                       zm                      关闭一级折叠                            N
+"                       zr                      打开一级折叠                            N
+"                       zM                      关闭所有折叠                            N
+"                       zR                      打开所有折叠                            N
+"
+"                       以下命令:
+"                       <CTRL>+\[h|l]{s|g|d|c|t|e|f|i}:
+"                       []表示可选,h表示横向新建窗口,l表示纵向新建窗口
+"                       {}表示必选,其含义如下：
+"                       s:                      查找本 C 符号                           N
+"                       g:                      查找本定义                              N
+"                       d:                      查找本函数调用的函数                    N
+"                       c:                      查找调用本函数的函数                    N
+"                       t:                      查找本字符串                            N
+"                       e:                      查找本egrep模式                         N
+"                       f:                      查找本文件                              N
+"                       i:                      查找包含本文件的文件                    N
+"
+"                       <CTRL>+j                进入下方窗口                            N
+"                       <CTRL>+k                进入上方窗口                            N
+"                       <CTRL>+h                进入左方窗口                            N
+"                       <CTRL>+l                进入右方窗口                            N
+"
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => 通用设置
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" 关闭对VI的兼容
+set nocompatible
+
+" 仅读取用户目录的脚本
+"let $VIMRUNTIME="~/.vim"  
+"set runtimepath=~/.vim
+
+" 首先当做Unix文件，然后尝试dos文件
+set fileformats=unix,dos
+
+" VIM记住的命令历史条数
+set history=700
+
+" 显示行数
+set number
+
+" 高亮显示当前行
+set cursorline
+
+" 在命令行显示当前命令
+set showcmd
+
+" 光标始终位于屏幕中央
+set so=9999999
+
+" 搜索实时高亮
+set incsearch
+
+" 查找高亮
+set hlsearch
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" 快速命令
+" ,w 保存
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" 执行命令的前缀
+let mapleader = ";"
+let g:mapleader = ";"
+
+" 快速保存
+nmap <leader>w :w!<CR>
+" 快速退出
+nmap <leader>q :w<CR>:qall<CR>
+
+" 打开(关闭)TagList
+nmap <leader>t :Tlist<CR><ESC>
+
+" 新标签中添加文件
+nmap <leader>n :tabedit 
+
+" 多窗口间切换
+nmap <C-j> <C-w>j
+nmap <C-k> <C-w>k
+nmap <C-h> <C-w>h
+nmap <C-l> <C-w>l
+
+" quickfix快速命令, 仅对C,C++有效
+autocmd FileType c,cpp  map <buffer> <leader><space> :w<CR>:make<CR><CR>
+nmap <leader>cn :cn<CR>
+nmap <leader>cp :cp<CR>
+
+""""""""""""""""""""""""""""""
+" => 状态栏
+""""""""""""""""""""""""""""""
+" 0 永远不显示
+" 1 分割窗口时显示(默认)
+" 2 永远显示
+set laststatus=2
+
+" 状态栏格式 EchoFuncGetStatusLine()用于显示函数申明
+set statusline=FILE:%F%m%r%h\ %w\ \ \ CWD:%{getcwd()}\ \ \ Line(%p%%):%l/%L:%c
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => 色彩方案
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+if has("syntax")
+    syntax on            " 语法高亮
+endif
+
+" 设置配色方案，vim自带的配色方案保存在/usr/share/vim/vimXX/colors目录下
+"colorscheme ron
+
+" 语法高亮
+syntax enable
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => 文件类型
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" 打开文件类型插件
+" 命令                           检测    plugin  indent 
+" filetype on                    打开    未改变  未改变
+" filetype off                   关闭    未改变  未改变
+" filetype plugin on             打开    打开    未改变
+" filetype plugin off            未改变  关闭    未改变
+" filetype indent on             打开    未改变  打开
+" filetype indent off            未改变  未改变  关闭
+" filetype plugin indent on      打开    打开    打开
+" filetype plugin indent off     未改变  关闭    关闭
+filetype plugin indent on
+
+" 以4为单位缩进(c,h,sh,cpp,python,glsl,vim,java,asy文件有效)
+autocmd FileType c,h,sh,cpp,python,glsl,vim,java,asy set shiftwidth=4 | set expandtab
+setlocal et sta sw=4 sts=4
+set cindent
+
+" 语法高亮
+" glsl color
+au BufNewFile,BufRead *.glsl set syntax=glsl 
+
+" asy color
+au BufNewFile,BufRead *.asy set syntax=asy
+
+" 打开C(H)文件时自动加入骨架文件
+autocmd BufNewFile *.[c]  0read ~/.vim/skeletons/c.c
+autocmd BufNewFile *.[h]  0read ~/.vim/skeletons/h.h
+autocmd BufNewFile *.py  0read ~/.vim/skeletons/py.py
+autocmd BufNewFile *.pyw  0read ~/.vim/skeletons/pyw.pyw
+autocmd BufNewFile *.cpp  0read ~/.vim/skeletons/cpp.cpp
+autocmd BufNewFile *.asy 0read ~/.vim/skeletons/asy.asy
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => 色彩方案
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+if has("syntax")
+    syntax on            " 语法高亮
+endif
+
+" 设置配色方案，配色方案保存在~/.vim/colors/pp_color.vim
+colorscheme pp_color
+
+" 语法高亮
+syntax enable
+
+""""""""""""""""""""""""""""""
+" => 启动时的窗口布局 和跳转
+""""""""""""""""""""""""""""""
+" 运行gui
+if has("gui_running")
+    " 关闭菜单
+    set guioptions-=m
+    " 关闭工具栏
+    set guioptions-=T
+    " 启动GUI时全屏
+    au GUIEnter * simalt ~x
+endif
+
+" 从新打开文件时，自动跳转到上次(退出前)位置
+if has("autocmd")
+    au BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g'\"" | endif
+endif
+
+""""""""""""""""""""""""""""""
+" => 编码与字体
+""""""""""""""""""""""""""""""
+" 编码
+" 新建文件编码
+set fileencoding=utf-8
+
+" 文件读取时的编码
+set fileencodings=ucs-bom,utf-8,gb18030,gbk,gb2312,big5
+
+" vim终端编码
+if has("linux")
+    set termencoding=utf-8
+elseif has("cygwin")
+    set termencoding=gbk
+endif
+
+" windows 使用自己的字体
+if has("win32")
+    set guifont=courier_new:h16
+endif
+
+""""""""""""""""""""""""""""""
+" => 工具扩展
+""""""""""""""""""""""""""""""
+" tags目录 为当前目录 和 Linux标准include目录
+set tags+=./tags,/usr/include/tags
+
+" cscope 自动加载
+
+" echofunc 显示申明
+
+" TagList
+let Tlist_Ctags_Cmd = 'ctags'           " ctags命令 
+let Tlist_Use_Right_Window = 1          "让窗口显示在右边，0的话就是显示在左边
+let Tlist_Show_One_File = 0             "让taglist可以同时展示多个文件的函数列表
+let Tlist_File_Fold_Auto_Close = 1      "非当前文件，函数列表折叠隐藏
+let Tlist_Exit_OnlyWindow = 1           "当taglist是最后一个分割窗口时，自动退出vim
+let Tlist_Process_File_Always = 1       "实时更新tags
+let Tlist_Inc_Winwidth = 0
+
+" 智能补全
+imap <F2> <C-X><C-O>
+set completeopt=menu,menuone            " 关掉预览窗口
+
+" -- WinManager 设置 --
+" 设置我们要管理的插件
+let g:winManagerWindowLayout = "FileExplorer,BufExplorer|TagList"
+let g:persistentBehaviour = 0           " 如果所有编辑文件都关闭了，退出vim
+nmap <leader>m :WMToggle<CR><ESC>
+
+" BufExplorer
+let g:bufExplorerSortBy='mru'        " 使用 最近使用 排序
+
+""""""""""""""""""""""""""""""
+" => 折叠
+""""""""""""""""""""""""""""""
+" 语法折叠
+set foldmethod=syntax
+" 启动vim时不要自动折叠代码
+set foldlevel=999
+" 设置折叠栏宽度
+set foldcolumn=1
+

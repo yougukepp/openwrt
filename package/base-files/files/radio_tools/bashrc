@@ -1,0 +1,54 @@
+#!/bin/bash
+
+# Umask
+#
+# /etc/profile sets 022, removing write perms to group + others.
+# Set a more restrictive umask: i.e. no exec perms for others:
+# Paranoid: neither group nor others have any perms:
+# umask 077
+umask 027
+
+#export PS1="\u@\h&\w:"
+export PS1='\[\e[32m\]\u@\h\[\e[33m\]\w\[\e[0m\]:'
+
+alias df='df -h'
+alias du='du -sh'
+
+alias grep='egrep -nr --color'
+alias egrep='egrep --color=auto'
+
+alias dir='ls --color=auto --format=vertical'
+alias vdir='ls --color=auto --format=long'
+
+# You may uncomment the following lines if you want `ls' to be colorized:
+export LS_OPTIONS='-hFS --color=auto'
+eval "`dircolors`"
+alias ls='ls $LS_OPTIONS'
+alias ll='ls $LS_OPTIONS -lA'
+alias l='ls $LS_OPTIONS -l'
+alias la='ls $LS_OPTIONS -al'
+
+alias gcc='gcc -Wall -pedantic -fno-common -std=c99'
+#alias gcc='gcc -Wall -pedantic -std=gnu99'
+#alias c++='c++ -Wall -pedantic -pg'
+
+alias minicom='sudo minicom -c on'
+
+# 为 man pages 设置颜色
+man() {
+  env \
+  LESS_TERMCAP_mb=$(printf "\e[1;31m") \
+  LESS_TERMCAP_md=$(printf "\e[1;31m") \
+  LESS_TERMCAP_me=$(printf "\e[0m") \
+  LESS_TERMCAP_se=$(printf "\e[0m") \
+  LESS_TERMCAP_so=$(printf "\e[1;44;33m") \
+  LESS_TERMCAP_ue=$(printf "\e[0m") \
+  LESS_TERMCAP_us=$(printf "\e[1;32m") \
+  man "$@"
+}
+
+export EDITOR=vim
+export GREP_OPTIONS="--exclude-dir=\.svn" 
+
+rm -rf ~/Desktop
+
