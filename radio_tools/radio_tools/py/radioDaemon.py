@@ -9,7 +9,7 @@ import re
 import time
 import socket
 import thread
-#import serial
+import serial
 
 g_get_ip_sleep_time = 3
 g_sleep_time = 0
@@ -41,18 +41,18 @@ g_buf_size = 1024
 g_serial_buf_size = 1
 
 def GetLocalWifiIP():
-    cmd = 'sudo ifconfig ' # remove sudo
+    cmd = 'ifconfig ' # remove sudo
     interfaceName = 'wlan0'
     cmdStr = cmd + interfaceName
 
-    while True: 
+    while True:
         rstStrList = os.popen(cmdStr).readlines()
-        ipLine = rstStrList[1] 
-         
+        ipLine = rstStrList[1]
+
         # find ip line
         m = re.search(r'inet addr:(.*)\s+Bcast', ipLine)
         #print ipLine
-        
+
         ip = ''
         if m:
             ip = m.group(1)
@@ -91,6 +91,7 @@ def Wifi2LanAndSerial(inSocket, outAddr, outSerial):
 def Serial2Wifi(ser, wifiAddr):
     outSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
+    buf = ''
     while True:
         recvData = ser.read(g_serial_buf_size)
         print 'recv from:',
@@ -99,12 +100,16 @@ def Serial2Wifi(ser, wifiAddr):
         print 'data:',
         print recvData
 
-        outSocket.sendto(recvData, wifiAddr)
-        print 'send:',
-        print recvData,
-        print 'to:',
-        print wifiAddr
-        print
+        if '\n' != recvData: # a serial frame end with '\n'
+            buf += recvData
+        else:
+            outSocket.sendto(buf, wifiAddr)
+            print 'send:',
+            print recvData,
+            print 'to:',
+            print wifiAddr
+            print
+            buf = ''
 
 def Lan2Wifi(inSocket, outAddr):
     outSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -123,7 +128,7 @@ def Lan2Wifi(inSocket, outAddr):
         print outAddr
         print
 
-if __name__ == '__main__': 
+if __name__ == '__main__':
     # get wifi in ip
     # global g_wifi_in_ip
     g_wifi_in_ip = GetLocalWifiIP()

@@ -1,8 +1,8 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 from socket import *
 
-recvHost = '192.168.2.103'
+recvHost = '192.168.3.3'
 recvPort = 8001
 recvAddr = (recvHost, recvPort)
 

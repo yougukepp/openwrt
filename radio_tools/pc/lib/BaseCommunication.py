@@ -20,7 +20,6 @@ class BaseCommunication(threading.Thread):
         while self.mRunning:
             self.Recv()
             #print('BaseCommunication Running...')
-            time.sleep(1)
         #print('BaseCommunication run End')
 
     def stop(self):

@@ -15,6 +15,10 @@ class Configer:
         hasValidSection = False
         section = self.mSection
 
+        #print('in Configer.GetValue:', end='')
+        #print(section + ' ', end = '')
+        #print(attributeName)
+
         # 在ini文件中查找section是否有效
         for k in self.mConfiger:
             if k == section:

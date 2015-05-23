@@ -1,9 +1,9 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 import serial
 
-gSerialName = '/dev/ttyUSB1'
+gSerialName = '/dev/ttyS0'
 gBaudrate = 9600
 gRequestByte = 1
 gSendData = b'0123456789abcdef\r\n'
@@ -24,11 +24,11 @@ if __name__ == "__main__":
 
     nWrite = ser.write(gSendData)
 
-    print('write to: ', end = '')
-    print(ser.portstr + ',', end = '')
-    print(str(ser.timeout) + ',', end = '')
-    print(ser.baudrate)
-    print('%d:%s' % (nWrite, gSendData))
+    print 'write to: ',
+    print ser.portstr + ',',
+    print str(ser.timeout) + ',',
+    print ser.baudrate,
+    print ':%s' % gSendData
 
     ser.close()
 

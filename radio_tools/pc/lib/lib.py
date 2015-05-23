@@ -4,6 +4,8 @@
 import socket
 import time
 
+from lib.Pinger import Pinger
+
 def ComOrNet(portName):
     '''
     依据 民族判断是串口还是网络
@@ -24,4 +26,15 @@ def GetNowStr():
 
     return nowStr
 
+def GetReachableIPs(netIP, minIP, maxIP, timeout):
+    pinger = Pinger()
+    reachableIPs = None
+
+    for ipLast in range(int(minIP), int(maxIP) + 1):
+        ip = netIP + '.' + str(ipLast)
+        #print(ip)
+        pinger.AddIp(ip)
+    reachableIPs = pinger.Ping(int(timeout))
+
+    return reachableIPs
 

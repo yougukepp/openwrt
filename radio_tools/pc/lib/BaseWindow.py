@@ -2,9 +2,11 @@
 # -*- coding: utf-8 -*-
 
 from PyQt5.QtWidgets import QMainWindow
+from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtCore import QTimer
 
 from lib.Configer import Configer
+from lib.lib import GetLocalIpList
 
 class BaseWindow(QMainWindow):
     def __init__(self, ui, iniSection, parent=None):
@@ -91,11 +93,19 @@ class BaseWindow(QMainWindow):
     def GetComboBoxCurrentText(self):
         return self.mComboBox.currentText()
 
+    def SetComboBoxCurrentText(self, text):
+        self.mComboBox.addItem(text)
+
     def StopTalking(self):
         if self.mComPort:
             self.mComPort.stop()
             self.mComPort.join()
         self.mPlainTextEditTimer.stop()
+
+        # 为下一次打开准备
+        del self.mComPort
+        self.mComPort = None
+
         #print('BaseWindow StopTalking')
 
     def WidgetToTalking(self):
@@ -134,4 +144,30 @@ class BaseWindow(QMainWindow):
         self.StopTalking()
 
         # TODO: 实现将plainTextEdit内容记录到文件
+
+    def GetAndCheckLocalIP(self, netIPInIni, deviceIPInIni):
+        # 获取本机IP列表
+        localAddrList = GetLocalIpList()
+
+        # 获取INI中IP
+        localAddrFromIni = self.mConfiger.GetValue(netIPInIni)
+        localAddrFromIni += '.'
+        localAddrFromIni += self.mConfiger.GetValue(deviceIPInIni)
+
+        # IP检查
+        rightIPFlag = False
+        for ip in localAddrList:
+            if localAddrFromIni == ip:
+                rightIPFlag = True
+                break
+
+        if not rightIPFlag:
+            msgBox = QMessageBox();
+            msg = '本机ip列表:' + str(localAddrList) + '\n'
+            msg += '主设备ip:' + str(localAddrFromIni)
+            msgBox.setText(msg)
+            msgBox.exec();
+            return None
+        else:
+            return localAddrFromIni
 

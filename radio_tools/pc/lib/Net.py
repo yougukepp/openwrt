@@ -17,6 +17,10 @@ class Net(BaseCommunication):
         self.mRecvSock = recvSock
         self.mBufSize = bufSize
 
+    def __del__(self):
+        #print('Net __del__')
+        self.mRecvSock.close()
+
     # 接收线程 启动 循环调用Recv
     def StartRecv(self):
         self.start()
@@ -34,17 +38,6 @@ class Net(BaseCommunication):
             # 编码
             recvStr = recvData.decode(encoding="utf-8")
 
-            '''
-            # 记录日志
-            ip = clientAddr[0]
-            port = clientAddr[1]
-            log = GetLogTitle(ip, port)  + '\n'
-            log += recvStr + '\n\n'
-            gMasterTalkLogLock.acquire() # 操作日志 需要锁
-            global gMasterTalkLog
-            gMasterTalkLog += log
-            gMasterTalkLogLock.release() # 操作日志 需要锁
-            '''
             self.AddLog(clientAddr, recvStr)
             print('recv %s from %s:%s' % (recvStr, clientAddr[0], str(clientAddr[1])))
 
@@ -60,6 +53,7 @@ class Net(BaseCommunication):
 
         sendSock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sendSock.sendto(byteData, addr)
+        sendSock.close()
 
         self.AddLog(addr, data)
         print('send %s to %s:%s' % (data, addr[0], str(addr[1])))

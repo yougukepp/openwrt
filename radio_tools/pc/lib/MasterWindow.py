@@ -4,29 +4,16 @@
 from PyQt5.uic import loadUiType
 from PyQt5.QtWidgets import QMessageBox
 
-from lib.Pinger import Pinger
 from lib.BaseWindow import BaseWindow
 from lib.Net import Net
 from lib.lib import ComOrNet
-from lib.lib import GetLocalIpList
+from lib.lib import GetReachableIPs
 
 gMasterWindowUIClass = loadUiType('ui/masterwindow.ui')[0] # 0 为类 1为对应的控件类型
 
-def GetReachableIPs(netIP, minIP, maxIP, timeout):
-    pinger = Pinger()
-    reachableIPs = None
-
-    for ipLast in range(int(minIP), int(maxIP) + 1):
-        ip = netIP + '.' + str(ipLast)
-        #print(ip)
-        pinger.AddIp(ip)
-    reachableIPs = pinger.Ping(int(timeout))
-
-    return reachableIPs
-
 class MasterWindow(BaseWindow):
     def __init__(self, parent=None):
-        BaseWindow.__init__(self, gMasterWindowUIClass(), 'master', parent)
+        BaseWindow.__init__(self, gMasterWindowUIClass(), '主设备', parent)
 
         # 主模块 扫描从模块
         self.mPushButtonSearch = self.mUi.pushButtonSearch
@@ -67,7 +54,7 @@ class MasterWindow(BaseWindow):
         #print('MasterWindow StartTalking')
 
         # 构造接收套接字
-        ipAddr = self.GetAndCheckLocalIP()
+        ipAddr = self.GetAndCheckLocalIP('网络IP', '主设备IP')
         port = int(self.mConfiger.GetValue('主设备Port'))
         addr = (ipAddr, port)
         #print(addr)
@@ -85,30 +72,4 @@ class MasterWindow(BaseWindow):
         addr = (ipAddr, port)
 
         BaseWindow.Send(self, addr)
-
-    def GetAndCheckLocalIP(self):
-        # 获取本机IP列表
-        localAddrList = GetLocalIpList()
-
-        # 获取INI中IP
-        localAddrFromIni = self.mConfiger.GetValue('网络IP')
-        localAddrFromIni += '.'
-        localAddrFromIni += self.mConfiger.GetValue('主设备IP')
-
-        # IP检查
-        rightIPFlag = False
-        for ip in localAddrList:
-            if localAddrFromIni == ip:
-                rightIPFlag = True
-                break
-
-        if not rightIPFlag:
-            msgBox = QMessageBox();
-            msg = '本机ip列表:' + str(localAddrList) + '\n'
-            msg += '主设备ip:' + str(localAddrFromIni)
-            msgBox.setText(msg)
-            msgBox.exec();
-            return None
-        else:
-            return localAddrFromIni
 
