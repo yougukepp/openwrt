@@ -5,6 +5,7 @@ import sys
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QWidget
+from PyQt5.QtGui import QIcon  
 from PyQt5.uic import loadUiType
 
 from lib.MasterWindow import MasterWindow
@@ -22,11 +23,15 @@ class PCLoginWindow(QWidget):
         self.mUi = gUIClass[0]()
         self.mUi.setupUi(self)
 
+        # 图标
+        self.setWindowTitle('Icon')  
+        self.setWindowIcon(QIcon(r'./res/wifi.png'))
+
         self.mRadioButtonMaster = self.mUi.radioButtonMaster
         self.mRadioButtonFollower = self.mUi.radioButtonFollower
         self.mRadioButtonConfiger = self.mUi.radioButtonConfiger
         self.mPushButton = self.mUi.pushButton
-        
+
         # 默认选择主设备
         self.mRadioButtonMaster.setChecked(True)
 

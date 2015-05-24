@@ -4,6 +4,7 @@
 from PyQt5.QtWidgets import QMainWindow
 from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtCore import QTimer
+from PyQt5.QtGui import QIcon
 
 from lib.Configer import Configer
 from lib.lib import GetLocalIpList
@@ -15,6 +16,10 @@ class BaseWindow(QMainWindow):
         # ui界面
         self.mUi = ui
         self.mUi.setupUi(self)
+
+        # 设置图标
+        self.setWindowTitle('Icon')
+        self.setWindowIcon(QIcon(r'./res/wifi.png'))
 
         # 配置
         self.mConfiger = Configer(iniSection)

@@ -3,6 +3,7 @@
 
 from PyQt5.uic import loadUiType
 from PyQt5.QtWidgets import QMessageBox
+from PyQt5.QtGui import QIcon
 
 from lib.BaseWindow import BaseWindow
 from lib.Net import Net
@@ -14,6 +15,10 @@ gMasterWindowUIClass = loadUiType('ui/masterwindow.ui')[0] # 0 为类 1为对应
 class MasterWindow(BaseWindow):
     def __init__(self, parent=None):
         BaseWindow.__init__(self, gMasterWindowUIClass(), '主设备', parent)
+
+        # 设置图标
+        self.setWindowTitle('Icon')
+        self.setWindowIcon(QIcon(r'./res/wifim.png'))
 
         # 主模块 扫描从模块
         self.mPushButtonSearch = self.mUi.pushButtonSearch
