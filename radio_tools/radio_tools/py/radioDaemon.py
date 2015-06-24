@@ -80,7 +80,8 @@ def Wifi2LanAndSerial(inSocket, outAddr, outSerial):
         print 'to:',
         print outAddr
 
-        outSerial.write(recvData)
+        serialData = recvData + '\r\n'
+        outSerial.write(serialData)
         print 'send to:',
         print ser.portstr,
         print ser.baudrate,
