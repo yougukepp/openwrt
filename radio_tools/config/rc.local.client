@@ -18,7 +18,9 @@ echo 'cp sta files done'
 echo 'network done'
 
 # start main proc
-/radio_tools/py/radioDaemon.py &
+/radio_tools/py/radioDaemon.py > /dev/null &
+/radio_tools/py/radioDaemon.py > /pp.log &
+
 
 exit 0
 
