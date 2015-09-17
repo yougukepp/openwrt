@@ -1,6 +1,6 @@
 include ../buildvars.mk
 
-LIB=-luser32
+LIB=-luser32 -lwsock32
 LDFLAGS=-shared -Wl,--output-def=libdll.def -Wl,--out-implib=libdll.a -Wl,--dll
 
 all:clean dll.o
@@ -11,4 +11,4 @@ dll.o:dll.c
 	$(CC) $(CFLAGS) dll.c -o dll.o
 
 clean:
-	rm -rf *.dll *.o
+	rm -rf *.dll *.o *.a *.def
