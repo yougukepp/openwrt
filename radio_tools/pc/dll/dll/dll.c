@@ -141,47 +141,31 @@ void DLL_EXPORT ServerSend(const char *ip, int port, const char *pBuf, int len)
 
 int DLL_EXPORT ServerRecv(char* pBuf, int len, char *addr)
 {
-    char hostName[BUF_SIZE]; 
-    char ipStr[BUF_SIZE]; 
-
-    int ret = 0;
     int readBytes = 0;
     SOCKET sock;
     SOCKADDR_IN myAddr;  
     SOCKADDR remoteAddr;  
     int remoteAddrLen = sizeof(SOCKADDR);  
-    memset(hostName, 0, sizeof(hostName));
 
     if(INVALID_SOCKET == (sock = socket(AF_INET, SOCK_DGRAM, 0/*IPPROTO_UDP*/)))
     {
         printf("%s,%d socket failled.\n", __FILE__, __LINE__);
         return 0;
     }
-    /* 求取本机ip */
-    ret = gethostname(hostName,sizeof(hostName));
-    if(0 != ret)
-    {
-        printf("%s,%d gethostbyname failled.\n", __FILE__, __LINE__);
-        return 0;
-    }
-    struct hostent *pHostent = gethostbyname(hostName); 
-    sprintf(ipStr, "%d.%d.%d.%d",
-            pHostent->h_addr_list[0][0] & 0x00ff,
-            pHostent->h_addr_list[0][1] & 0x00ff,
-            pHostent->h_addr_list[0][2] & 0x00ff,
-            pHostent->h_addr_list[0][3] & 0x00ff);
 
-    myAddr.sin_addr.S_un.S_addr = inet_addr(ipStr);
+    myAddr.sin_addr.S_un.S_addr = inet_addr("0.0.0.0"); /* 绑定的ip为主机所有ip */
     myAddr.sin_family = AF_INET;
     myAddr.sin_port = htons(PC_PORT);
     /* 绑定服务端端口号  */
     bind(sock, (SOCKADDR*)&myAddr, sizeof(SOCKADDR));
 
-    printf("bind to:%s:%d blocking wait package.\n", ipStr, PC_PORT);
+    printf("bind to port:%d blocking wait package.\n", PC_PORT);
     readBytes = recvfrom(sock, pBuf, len, 0, (SOCKADDR*)&remoteAddr, &remoteAddrLen);
     if(SOCKET_ERROR == readBytes)
     {
-        printf("%s,%d recvfrom failled.\n", __FILE__, __LINE__);
+        int errCode = WSAGetLastError();
+        printf("%s,%d recvfrom failled%d.\n", __FILE__, __LINE__, errCode);
+        printf("%s,%d.\n", pBuf, remoteAddrLen);
         return 0;
     }
 

@@ -5,7 +5,7 @@
 #include <windows.h>
 
 /* 用于测试的两个宏 */
-#define TARGET_IP       ("10.33.152.5")
+#define TARGET_IP       ("127.0.0.1")
 #define TARGET_PORT     (8001)
 
 
@@ -67,11 +67,12 @@ int main(int argc, char *argv[])
     else if(0 == strcmp(argv[1], "send"))
     {
         const char *pBuf = "123abc";
+        int len = strlen(pBuf) + 1;
         ServerInit(); 
         ServerSend(TARGET_IP, TARGET_PORT, pBuf, strlen(pBuf) + 1);
         ServerDeInit();
 
-        printf("send;%s to %s:%d.\n", pBuf, TARGET_IP, TARGET_PORT);
+        printf("send;%s(%d) to %s:%d.\n", pBuf, len, TARGET_IP, TARGET_PORT);
         fflush(stdout);
     }
     else if(0 == strcmp(argv[1], "recv"))
@@ -80,7 +81,7 @@ int main(int argc, char *argv[])
         char pBuf[BUF_SIZE] = {0};
         char remoteAddr[BUF_SIZE] = {0};
         ServerInit(); 
-        readBytes = ServerRecv(pBuf, strlen(pBuf) + 1, remoteAddr);
+        readBytes = ServerRecv(pBuf, BUF_SIZE, remoteAddr);
         ServerDeInit();
 
         printf("from:%s recv %s(%d).\n", remoteAddr, pBuf, readBytes);
