@@ -7,9 +7,5 @@
     #define DLL_EXPORT __declspec(dllimport)
 #endif
 
-typedef unsigned int u32;
-typedef unsigned char u8;
-
 #endif // _DLL_H_
-
 

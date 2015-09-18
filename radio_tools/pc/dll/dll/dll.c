@@ -1,11 +1,14 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <WINSOCK2.H>
 #include <process.h>
+#include <windows.h>
 
 #include "dll.h"
 
+#define PC_PORT     (8001)
 #define BUF_SIZE    (1024)
 
 void DLL_EXPORT ServerInit(void)
@@ -16,7 +19,7 @@ void DLL_EXPORT ServerInit(void)
     wVersionRequested=MAKEWORD(2,2);  
     if(WSAStartup(wVersionRequested,&wsaData)!=0)  
     {  
-        printf("%s,%d WSAStartup失败.\n", __FILE__, __LINE__);
+        printf("%s,%d WSAStartup failled.\n", __FILE__, __LINE__);
         return;
     } 
 }
@@ -43,7 +46,7 @@ void DLL_EXPORT ServerSearch(void)
     ret = gethostname(hostName,sizeof(hostName));
     if(0 != ret)
     {
-        printf("%s,%d gethostbyname 错误.\n", __FILE__, __LINE__);
+        printf("%s,%d gethostbyname failled.\n", __FILE__, __LINE__);
         return;
     }
 
@@ -77,7 +80,7 @@ void DLL_EXPORT ServerSearch(void)
         FILE *pingOut = _popen(cmd, "rt");
         if(NULL == pingOut)
         {
-            printf("%s,%d _popen错误.\n", __FILE__, __LINE__);
+            printf("%s,%d _popen failled.\n", __FILE__, __LINE__);
             return;
         } 
         line_cnt = 0; 
@@ -116,27 +119,73 @@ void DLL_EXPORT ServerSearch(void)
     fclose(device_ip_list_file);
 }
 
-SOCKET DLL_EXPORT ServerOpen(const char *ipAndPort)
+void DLL_EXPORT ServerSend(const char *ip, int port, const char *pBuf, int len)
 {
-  printf("%s,%d.\n", __FILE__, __LINE__);
-  return 0;
+    SOCKET sock;
+    if(INVALID_SOCKET == (sock = socket(AF_INET, SOCK_DGRAM, 0/*IPPROTO_UDP*/)))
+    {
+        printf("%s,%d socket failled.\n", __FILE__, __LINE__);
+        return;
+    } 
+    
+    /* 服务端地址 */
+    SOCKADDR_IN srvAddr;  
+    srvAddr.sin_family = AF_INET;
+    srvAddr.sin_addr.S_un.S_addr = inet_addr(ip);
+    srvAddr.sin_port = htons(port);
+    
+    sendto(sock, pBuf, len, 0, (SOCKADDR*)&srvAddr, sizeof(SOCKADDR));
+
+    closesocket(sock);
 }
 
-void DLL_EXPORT ServerClose(SOCKET socket)
+int DLL_EXPORT ServerRecv(char* pBuf, int len, char *addr)
 {
-  printf("%s,%d.\n", __FILE__, __LINE__);
-}
+    char hostName[BUF_SIZE]; 
+    char ipStr[BUF_SIZE]; 
 
-void DLL_EXPORT ServerSend(SOCKET socket, const u8 *pBuf, u32 len)
-{
-  printf("%s,%d.\n", __FILE__, __LINE__);
-}
+    int ret = 0;
+    int readBytes = 0;
+    SOCKET sock;
+    SOCKADDR_IN myAddr;  
+    SOCKADDR remoteAddr;  
+    int remoteAddrLen = sizeof(SOCKADDR);  
+    memset(hostName, 0, sizeof(hostName));
 
-u32 DLL_EXPORT ServerRecv(SOCKET socket, u8 *pBuf, u32 len)
-{
-  printf("%s,%d.\n", __FILE__, __LINE__);
+    if(INVALID_SOCKET == (sock = socket(AF_INET, SOCK_DGRAM, 0/*IPPROTO_UDP*/)))
+    {
+        printf("%s,%d socket failled.\n", __FILE__, __LINE__);
+        return 0;
+    }
+    /* 求取本机ip */
+    ret = gethostname(hostName,sizeof(hostName));
+    if(0 != ret)
+    {
+        printf("%s,%d gethostbyname failled.\n", __FILE__, __LINE__);
+        return 0;
+    }
+    struct hostent *pHostent = gethostbyname(hostName); 
+    sprintf(ipStr, "%d.%d.%d.%d",
+            pHostent->h_addr_list[0][0] & 0x00ff,
+            pHostent->h_addr_list[0][1] & 0x00ff,
+            pHostent->h_addr_list[0][2] & 0x00ff,
+            pHostent->h_addr_list[0][3] & 0x00ff);
 
-  return 0;
+    myAddr.sin_addr.S_un.S_addr = inet_addr(ipStr);
+    myAddr.sin_family = AF_INET;
+    myAddr.sin_port = htons(PC_PORT);
+    /* 绑定服务端端口号  */
+    bind(sock, (SOCKADDR*)&myAddr, sizeof(SOCKADDR));
+
+    printf("bind to:%s:%d blocking wait package.\n", ipStr, PC_PORT);
+    readBytes = recvfrom(sock, pBuf, len, 0, (SOCKADDR*)&remoteAddr, &remoteAddrLen);
+    if(SOCKET_ERROR == readBytes)
+    {
+        printf("%s,%d recvfrom failled.\n", __FILE__, __LINE__);
+        return 0;
+    }
+
+    return readBytes;
 }
 
 void DLL_EXPORT ServerDeInit(void)
