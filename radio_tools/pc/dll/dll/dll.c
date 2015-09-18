@@ -28,6 +28,8 @@ void DLL_EXPORT ServerSearch(void)
     char cmd[BUF_SIZE];
     char host_ip[BUF_SIZE];
     char ping_buf[BUF_SIZE]; 
+    char *pos = NULL;
+    int lost = 0;
     unsigned char ip[4] = {0};
     float step = 100.0f / 254;
     float rate = 0.0f;
@@ -70,24 +72,35 @@ void DLL_EXPORT ServerSearch(void)
         memset(cmd, 0, sizeof(cmd));
         strcat(cmd, "ping -f -n 1 -w 1 ");
         strcat(cmd, host_ip);
-        //strcat(cmd, " > ping.log");
 
-        //system(cmd);
+        /* 执行并解析 */
         FILE *pingOut = _popen(cmd, "rt");
         if(NULL == pingOut)
         {
             printf("%s,%d _popen错误.\n", __FILE__, __LINE__);
             return;
         } 
-        line_cnt = 0;
+        line_cnt = 0; 
+        lost = 0;
         while(!feof( pingOut))
         {
+            pos = NULL;
+            memset(ping_buf, 0, sizeof(ping_buf));
             fgets(ping_buf, BUF_SIZE, pingOut);
+            pos = strstr(ping_buf, "100%");
+            if(NULL != pos) /* 有"100%" 有丢包 立即跳出 */
+            {
+                /*printf("%s:", cmd);
+                printf("%s\n", pos);*/
+                lost = 1;
+                break;
+            }
             /*printf("%d:", line_cnt);
             printf(ping_buf);*/
+
             line_cnt++;
         } 
-        if(9 == line_cnt) /* ping有回显输出9行 否则7行 */
+        if(!lost) /* 全部输出都分析没有"100%"字符串 无丢包 可达 */
         {
             fprintf(device_ip_list_file, "%s\n", host_ip);
             fflush(device_ip_list_file);
