@@ -132,19 +132,19 @@ void DLL_EXPORT ServerSend(const char *ip, int port, const char *pBuf, int len)
     SOCKADDR_IN srvAddr;  
     srvAddr.sin_family = AF_INET;
     srvAddr.sin_addr.S_un.S_addr = inet_addr(ip);
-    srvAddr.sin_port = htons(port);
+    srvAddr.sin_port = htons(port); 
     
     sendto(sock, pBuf, len, 0, (SOCKADDR*)&srvAddr, sizeof(SOCKADDR));
-
     closesocket(sock);
 }
 
 int DLL_EXPORT ServerRecv(char* pBuf, int len, char *addr)
 {
+    char portStr[20] = {0};
     int readBytes = 0;
     SOCKET sock;
     SOCKADDR_IN myAddr;  
-    SOCKADDR remoteAddr;  
+    SOCKADDR_IN remoteAddr;  
     int remoteAddrLen = sizeof(SOCKADDR);  
 
     if(INVALID_SOCKET == (sock = socket(AF_INET, SOCK_DGRAM, 0/*IPPROTO_UDP*/)))
@@ -167,7 +167,14 @@ int DLL_EXPORT ServerRecv(char* pBuf, int len, char *addr)
         printf("%s,%d recvfrom failled%d.\n", __FILE__, __LINE__, errCode);
         printf("%s,%d.\n", pBuf, remoteAddrLen);
         return 0;
-    }
+    } 
+    
+    /* 写入ip:port */
+    memset(portStr, 0, sizeof(portStr));
+    sprintf(portStr, "%d", ntohs(remoteAddr.sin_port));
+    strcat(addr, (char *)inet_ntoa(remoteAddr.sin_addr));
+    strcat(addr, ":");
+    strcat(addr, portStr);
 
     return readBytes;
 }

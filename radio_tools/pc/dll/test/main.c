@@ -80,6 +80,9 @@ int main(int argc, char *argv[])
         int readBytes = 0;
         char pBuf[BUF_SIZE] = {0};
         char remoteAddr[BUF_SIZE] = {0};
+        memset(pBuf, 0, BUF_SIZE);
+        memset(remoteAddr, 0, BUF_SIZE);
+
         ServerInit(); 
         readBytes = ServerRecv(pBuf, BUF_SIZE, remoteAddr);
         ServerDeInit();
