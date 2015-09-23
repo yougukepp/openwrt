@@ -19,7 +19,7 @@ echo 'network done'
 
 # start main proc
 /radio_tools/py/radioDaemon.py > /dev/null &
-/radio_tools/py/radioDaemon.py > /pp.log &
+#/radio_tools/py/radioDaemon.py > /pp.log &
 
 
 exit 0
