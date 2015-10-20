@@ -1,0 +1,4 @@
+1、package/base-files/files/lib/functions/uci-defaults.sh
+2、主设备ip
+
+
