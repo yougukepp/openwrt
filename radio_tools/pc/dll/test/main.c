@@ -35,8 +35,8 @@ lpServerDeInit ServerDeInit;
 static void help(void) 
 {
     printf("Usage:\n");
-    printf("Serach  709test search\n");
-    printf("Send    709test send ×Ö·û´®.\n");
+    printf("Serach  709test search.\n");
+    printf("Send    709test send ip str.\n");
     printf("Recv    709test recv.\n");
     exit(0);
 }
@@ -66,13 +66,17 @@ int main(int argc, char *argv[])
     }
     else if(0 == strcmp(argv[1], "send"))
     {
-        const char *pBuf = "123abc";
+        if(4 != argc)
+        {
+            help();
+        }
+        const char *pBuf = argv[3];
         int len = strlen(pBuf) + 1;
         ServerInit(); 
-        ServerSend(TARGET_IP, TARGET_PORT, pBuf, strlen(pBuf) + 1);
+        ServerSend(argv[2], TARGET_PORT, pBuf, strlen(pBuf) + 1);
         ServerDeInit();
 
-        printf("send;%s(%d) to %s:%d.\n", pBuf, len, TARGET_IP, TARGET_PORT);
+        printf("send;%s(%d) to %s:%d.\n", pBuf, len, argv[2], TARGET_PORT);
         fflush(stdout);
     }
     else if(0 == strcmp(argv[1], "recv"))
@@ -98,5 +102,4 @@ int main(int argc, char *argv[])
     FreeLibrary(hDll);
     return 0;
 }
-
 
