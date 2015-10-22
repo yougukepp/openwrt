@@ -17,11 +17,11 @@ g_promtp_time = 5
 
 # all port is 8001
 # wifi interface
-# master device unchanged 192.168.3.3
+# master device unchanged 192.168.16.3
 # follower moduler changed( becasue of dhcp)
-g_wifi_in_ip = '192.168.3.2' # inited ip to 192.168.3.2(revesed ip)
+g_wifi_in_ip = '192.168.16.2' # inited ip to 192.168.16.2(revesed ip)
 g_wifi_in_port = 8001
-g_wifi_out_ip = '192.168.3.3'
+g_wifi_out_ip = '192.168.16.3'
 g_wifi_out_port = 8001
 
 # wired interface unchanged
