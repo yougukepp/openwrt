@@ -1,6 +1,11 @@
 1、准备工作:
    1、三台主机分别作为主设备、从设备、调试主机
    2、调试主机安装python、pyqt、pyserial
+   pyserial安装
+   win764位下无法安装pyserial-win32，所以只能下载源码安装。
+   1、设置PATH环境变量中包括Python路径
+   2、将pyserial-2.7.tar.gz拷贝入Python34\Lib\site-packages并解压
+   3、进入pyserial-2.7安装python setup.py install
 
 
 2、主设备 主模块
