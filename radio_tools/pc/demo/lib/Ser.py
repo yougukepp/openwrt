@@ -36,9 +36,11 @@ class Ser(BaseCommunication):
             return
 
         # 串口启动后会受到 两个连续的 0x0
+        """
         for c in recvData:
             print('%s:0x%x' % (str(type(c)), c), end=',')
         print()
+        """
 
         # 编码
         recvStr = recvData.decode(encoding="utf-8")

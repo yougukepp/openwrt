@@ -30,7 +30,7 @@ if __name__ == "__main__":
     while True:
         r = ser.read(gRequestByte)
         if 0 != len(r):
-            print r
+            print repr(r)
 
     print
     ser.close()

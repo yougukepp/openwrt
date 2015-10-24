@@ -86,7 +86,7 @@ def Wifi2LanAndSerial(inSocket, outAddr, outSerial):
         print ser.portstr,
         print ser.baudrate,
         print 'data:',
-        print recvData
+        print repr(recvData)
         print
 
 def Serial2Wifi(ser, wifiAddr):
